@@ -1,0 +1,21 @@
+# Copy this file to terraform.tfvars and fill in your values.
+# Do NOT commit terraform.tfvars — it is gitignored.
+
+aws_region = "us-east-1"
+
+# AMI IDs are region-specific. The values below are for us-east-1.
+# Kali requires an AWS Marketplace subscription before use:
+# https://aws.amazon.com/marketplace/pp/prodview-fznsw3f7mq7to
+kali_ami    = "ami-09e99f75cc7592017"
+windows_ami = "ami-06b5375e3af24939c"
+ubuntu_ami  = "ami-0ecb62995f68bb549"
+
+# Name of an EC2 key pair that already exists in your AWS account.
+key_name = "YourKeyPairName"
+
+# Your public IP(s) in CIDR notation. These are the only IPs allowed to
+# SSH into Kali/Ubuntu and RDP into Windows. Use /32 for a single address.
+# If you only need one or two access IPs, set the extras to your primary IP.
+operator_ip_1 = "1.2.3.4/32"
+operator_ip_2 = "1.2.3.4/32"
+operator_ip_3 = "1.2.3.4/32"
