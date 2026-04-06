@@ -175,7 +175,10 @@ Get-Content "C:\Program Files\Winlogbeat\winlogbeat-8.17.0-windows-x86_64\winlog
 Get-Service winlogbeat
 ```
 
-Then open `http://<ubuntu-public-ip>:5601` in your browser — navigate to **Dashboards** and you should see the pre-built Winlogbeat dashboards populated with Windows event data.
+Then open `http://<ubuntu-public-ip>:5601` in your browser. In the left-side navigation menu, expand the **Analytics** section:
+
+- **Discover** — select the `winlogbeat-*` Data View to explore raw Windows event logs as they stream in from Winlogbeat.
+- **Dashboards** — browse the pre-built Winlogbeat dashboards automatically loaded at boot for a visualized overview of Windows event activity.
 
 ---
 
