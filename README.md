@@ -125,6 +125,25 @@ Terraform will output the public IPs of all three instances when the apply compl
 
 ---
 
+## Generating Detection Logs
+
+With the lab running, attacks launched from the Kali machine against the Windows target are captured by Sysmon, shipped to Elasticsearch via Winlogbeat, and visualized in Kibana — this is the core detection engineering loop the lab is designed for.
+
+> **Finding the Windows private IP:** Attacks should target the Windows instance's *private* IP — that's the address the Kali security group is authorized to reach. To find it, open the AWS Console and navigate to **EC2 → Instances**, select the Windows instance, and look for **Private IPv4 address** in the instance details panel.
+
+A simple port scan is a good first test. SSH into Kali and run:
+
+```bash
+ssh -i your-key.pem kali@<kali-public-ip>
+nmap -sV <windows-private-ip>
+```
+
+This generates Sysmon **Event ID 3** (network connection) entries that should appear in Kibana's Discover view within seconds under the `winlogbeat-*` Data View.
+
+> **Additional attack vectors:** The full `kali-linux-default` tool suite (including `msfconsole`, `hydra`, `nikto`, and more) is already installed on the Kali instance. For a structured library of adversary techniques to simulate — and the detection opportunities each creates — see the [MITRE ATT&CK framework](https://attack.mitre.org/).
+
+---
+
 ## Security Group Design
 
 Three security groups enforce least-privilege access:
