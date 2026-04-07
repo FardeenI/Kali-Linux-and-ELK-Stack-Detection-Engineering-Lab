@@ -66,7 +66,7 @@ Before running `terraform apply`, you need:
 
 2. **EC2 key pair** already created in your AWS account (used for SSH into Kali/Ubuntu and decrypting the Windows RDP password).
 
-3. **Kali Linux AMI subscription** — the Kali AMI is distributed through AWS Marketplace and requires a free subscription before it can be launched. Subscribe before running `terraform apply`.
+3. **Kali Linux AMI subscription** — the Kali AMI is distributed through AWS Marketplace and requires a free subscription before it can be launched. [Subscribe here](https://aws.amazon.com/marketplace/pp/prodview-fznsw3f7mq7to) before running `terraform apply`.
 
 4. **Terraform** installed ([download](https://developer.hashicorp.com/terraform/install)).
 
