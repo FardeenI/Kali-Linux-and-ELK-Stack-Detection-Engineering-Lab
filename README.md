@@ -54,6 +54,43 @@ What I found most compelling about this lab's design is its simulation of a smal
 
 ---
 
+## Cost
+
+All prices are AWS on-demand rates for **us-east-1** and are subject to change. Check the [AWS pricing pages](https://aws.amazon.com/ec2/pricing/on-demand/) for current rates before deploying.
+
+### Compute (EC2)
+
+| Instance | Type | On-demand rate | Cost at 24/7 | Cost at 5 hrs/week |
+|---|---|---|---|---|
+| Kali Linux | t2.medium | $0.0464/hr | $33.87/mo | $1.01/mo |
+| Ubuntu SIEM | t2.large | $0.0928/hr | $67.74/mo | $2.01/mo |
+| Windows Target | t3.medium | $0.0416/hr | $30.37/mo | $0.90/mo |
+| **Subtotal** | | | **$132/mo** | **$3.92/mo** |
+
+### Storage (EBS — billed continuously regardless of instance state)
+
+| Volume | Size | Cost |
+|---|---|---|
+| Kali root | 25 GB (gp3) | $2.00/mo |
+| Ubuntu SIEM root | 50 GB (gp3) | $4.00/mo |
+| Windows root | 30 GB (gp3) | $2.40/mo |
+| **Subtotal** | | **$8.40/mo** |
+
+### Public IPv4 Addresses
+
+AWS charges $0.005/hr per public IPv4 address regardless of instance state. At 24/7 that's **$10.95/mo** across all three instances; at 5 hrs/week it's **$0.33/mo**. Note that dynamic public IPs are released when instances are stopped, so this cost scales with runtime.
+
+### Total Estimates
+
+| Usage pattern | Estimated monthly cost |
+|---|---|
+| 24/7 (always on) | ~$151/mo |
+| 5 hrs/week | ~$13/mo |
+
+> **Tip:** Stopping instances when the lab is not in use is the biggest lever on cost — compute charges drop to $0 while stopped, and dynamic public IPs are released. EBS storage is the only cost that runs continuously. Run `terraform destroy` when you are done with the lab entirely to stop all charges.
+
+---
+
 ## Prerequisites
 
 Before running `terraform apply`, you need:

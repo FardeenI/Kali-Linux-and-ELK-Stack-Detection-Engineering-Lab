@@ -156,6 +156,11 @@ resource "aws_instance" "ubuntu_vm" {
 	vpc_security_group_ids = [aws_security_group.ubuntu_sg.id]
 	key_name = var.key_name
 
+	root_block_device {
+		volume_size = 50
+		volume_type = "gp3"
+	}
+
 	tags = {
 		Name           = "SIEM (Elasticsearch, Kibana) - Ubuntu"
 		Project        = "Kali and ELK Stack Detection Engineering Lab"
