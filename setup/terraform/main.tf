@@ -242,6 +242,9 @@ resource "aws_instance" "windows_server" {
     -replace '#host: "localhost:5601"', 'host: "${aws_instance.ubuntu_vm.private_ip}:5601"' |
     Set-Content "$wlbPath\winlogbeat.yml"
 
+  # Allow ICMP echo requests (ping) through Windows Firewall
+  netsh advfirewall firewall add rule name="Allow ICMPv4" protocol="icmpv4:8,any" dir=in action=allow
+
   # Install and start Winlogbeat service
   powershell -ExecutionPolicy Bypass -File "$wlbPath\install-service-winlogbeat.ps1"
   Start-Service winlogbeat
