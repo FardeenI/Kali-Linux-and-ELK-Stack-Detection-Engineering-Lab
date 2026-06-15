@@ -103,7 +103,7 @@ Before running `terraform apply`, you need:
 
 2. **EC2 key pair** already created in your AWS account (used for SSH into Kali/Ubuntu and decrypting the Windows RDP password).
 
-3. **Kali Linux AMI subscription** — the Kali AMI is distributed through AWS Marketplace and requires a free subscription before it can be launched. [Subscribe here](https://aws.amazon.com/marketplace/pp/prodview-fznsw3f7mq7to) before running `terraform apply`.
+3. **Kali Linux AMI subscription** — the Kali AMI is distributed through AWS Marketplace and requires a free subscription before it can be launched. [Subscribe here](https://aws.amazon.com/marketplace/pp/prodview-fznsw3f7mq7to) before running `terraform apply`. The Windows Server AMI is AWS-owned and requires no subscription.
 
 4. **Terraform** installed ([download](https://developer.hashicorp.com/terraform/install)).
 
@@ -273,5 +273,5 @@ The default AMI IDs in `terraform.tfvars.example` target us-east-1. If deploying
 | Instance | Default AMI (us-east-1) |
 |---|---|
 | Kali Linux | ami-09e99f75cc7592017 |
-| Windows Server | ami-06b5375e3af24939c |
+| Windows Server | ami-0ab5e8edee718de14 (Windows Server 2022, AWS-owned — no Marketplace subscription required) |
 | Ubuntu | ami-0ecb62995f68bb549 |
