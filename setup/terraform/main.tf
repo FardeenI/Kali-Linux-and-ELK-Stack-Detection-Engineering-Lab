@@ -245,6 +245,12 @@ resource "aws_instance" "windows_server" {
   # Allow ICMP echo requests (ping) through Windows Firewall
   netsh advfirewall firewall add rule name="Allow ICMPv4" protocol="icmpv4:8,any" dir=in action=allow
 
+  # Allow SMB inbound — blocked by default on the Public network profile AWS instances land on
+  netsh advfirewall firewall add rule name="Allow SMB" protocol=TCP dir=in localport=445 action=allow
+
+  # Enable logon failure auditing — required to generate Event ID 4625 in the Security log
+  auditpol /set /subcategory:"Logon" /failure:enable
+
   # Install and start Winlogbeat service
   powershell -ExecutionPolicy Bypass -File "$wlbPath\install-service-winlogbeat.ps1"
   Start-Service winlogbeat
