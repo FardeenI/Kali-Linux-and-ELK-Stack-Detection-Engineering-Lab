@@ -251,6 +251,12 @@ resource "aws_instance" "windows_server" {
   # Enable logon failure auditing — required to generate Event ID 4625 in the Security log
   auditpol /set /subcategory:"Logon" /failure:enable
 
+  # Set low lockout policy and create throwaway victim account for brute force / spray simulation
+  # Targets labvictim instead of Administrator to avoid locking out the access account
+  net accounts /lockoutthreshold:5 /lockoutwindow:5 /lockoutduration:5
+  net user labvictim P@ssw0rd-Real-2026! /add
+  net localgroup "Remote Desktop Users" labvictim /add
+
   # Install and start Winlogbeat service
   powershell -ExecutionPolicy Bypass -File "$wlbPath\install-service-winlogbeat.ps1"
   Start-Service winlogbeat
