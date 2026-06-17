@@ -251,10 +251,16 @@ resource "aws_instance" "windows_server" {
   # Enable logon failure auditing — required to generate Event ID 4625 in the Security log
   auditpol /set /subcategory:"Logon" /failure:enable
 
+  # Enable account lockout auditing — required to generate Event ID 4740
+  auditpol /set /subcategory:"User Account Management" /success:enable /failure:enable
+
+  # Enable NTLM credential validation auditing — required to generate Event ID 4776
+  auditpol /set /subcategory:"Credential Validation" /success:enable /failure:enable
+
   # Set low lockout policy and create throwaway victim account for brute force / spray simulation
   # Targets labvictim instead of Administrator to avoid locking out the access account
   net accounts /lockoutthreshold:5 /lockoutwindow:5 /lockoutduration:5
-  net user labvictim P@ssw0rd-Real-2026! /add
+  net user labvictim 'P@ssw0rd-Real-2026!' /add
   net localgroup "Remote Desktop Users" labvictim /add
 
   # Install and start Winlogbeat service
