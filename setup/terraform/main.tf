@@ -257,6 +257,9 @@ resource "aws_instance" "windows_server" {
   # Enable NTLM credential validation auditing — required to generate Event ID 4776
   auditpol /set /subcategory:"Credential Validation" /success:enable /failure:enable
 
+  # Enable object access auditing — required to generate Event ID 4698 (scheduled task created)
+  auditpol /set /subcategory:"Other Object Access Events" /success:enable
+
   # Set low lockout policy and create throwaway victim account for brute force / spray simulation
   # Targets labvictim instead of Administrator to avoid locking out the access account
   net accounts /lockoutthreshold:5 /lockoutwindow:5 /lockoutduration:5
