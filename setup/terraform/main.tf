@@ -4,11 +4,36 @@ terraform {
 			source = "hashicorp/aws"
 			version = "~> 5.0"
 		}
+		random = {
+			source  = "hashicorp/random"
+			version = "~> 3.0"
+		}
 	}
 }
 
 provider "aws" {
 	region = var.aws_region
+}
+
+# Elasticsearch/Kibana must have xpack.security enabled for the Detection
+# Engine (rules, alerts, Get Started page) to work - Kibana's RBAC and
+# encrypted-saved-objects features depend on ES security APIs even when TLS
+# stays disabled. Credentials are provisioned via the ES file realm
+# (elasticsearch-users), which writes users directly to disk at boot instead
+# of requiring a running cluster or CLI output parsing.
+resource "random_password" "admin_password" {
+	length  = 20
+	special = false
+}
+
+resource "random_password" "kibana_service_password" {
+	length  = 20
+	special = false
+}
+
+resource "random_password" "winlogbeat_password" {
+	length  = 20
+	special = false
 }
 
 resource "aws_servicecatalogappregistry_application" "lab" {
@@ -184,26 +209,41 @@ resource "aws_instance" "ubuntu_vm" {
   apt-get update
   apt-get install -y elasticsearch kibana
 
+  # xpack.security must stay enabled - the Detection Engine (rules, alerts,
+  # Get Started page) depends on ES's security/RBAC APIs to determine
+  # privileges, even though TLS stays disabled (private VPC, out of scope
+  # for this lab - same trade-off as before).
   {
     echo "network.host: 0.0.0.0"
     echo "discovery.type: single-node"
-    echo "xpack.security.enabled: false"
+    echo "xpack.security.enabled: true"
+    echo "xpack.security.http.ssl.enabled: false"
+    echo "xpack.security.transport.ssl.enabled: false"
   } > /etc/elasticsearch/elasticsearch.yml
 
-  # Elasticsearch 8.x package install populates the keystore with SSL passwords
-  # that conflict with xpack.security.enabled: false - wipe and recreate it empty
-  # This change disables the SSL configuration, so log traffic communicated 
-  # between the Windows host and Elasticsearch does not travel through a secure channel.
-  # This risk of MITM attack imposed by this configuration change is mitigated by the lab environment's private nature,
-  # in that instances are deployed to a private AWS VPC, and is acceptable for 
-  # the learning goals of the lab.
-  rm -f /etc/elasticsearch/elasticsearch.keystore
-  /usr/share/elasticsearch/bin/elasticsearch-keystore create
+  # Provision users via the file realm - writes directly to disk, no need to
+  # query a running cluster or parse elasticsearch-reset-password output.
+  # labadmin: superuser for you to log into the Kibana UI (get the generated
+  #   password with `terraform output -raw kibana_admin_password`).
+  # kibana_service: kibana_system role, used by Kibana itself.
+  # winlogbeat_writer: superuser, used by Winlogbeat for ingest + dashboard
+  #   setup (scoped-down roles are a good follow-up, not required for the lab).
+  /usr/share/elasticsearch/bin/elasticsearch-users useradd labadmin -p '${random_password.admin_password.result}' -r superuser
+  /usr/share/elasticsearch/bin/elasticsearch-users useradd kibana_service -p '${random_password.kibana_service_password.result}' -r kibana_system
+  /usr/share/elasticsearch/bin/elasticsearch-users useradd winlogbeat_writer -p '${random_password.winlogbeat_password.result}' -r superuser
 
-  echo 'server.host: "0.0.0.0"' >> /etc/kibana/kibana.yml
+  {
+    echo 'server.host: "0.0.0.0"'
+    echo 'elasticsearch.username: "kibana_service"'
+    echo 'elasticsearch.password: "${random_password.kibana_service_password.result}"'
+  } >> /etc/kibana/kibana.yml
+
+  # Kibana needs its own encryption key for encrypted saved objects (rule
+  # actions/connectors) regardless of ES security state.
+  /usr/share/kibana/bin/kibana-encryption-keys generate -q --force >> /etc/kibana/kibana.yml
 
   # Restore ownership after root-run install steps altered it
-  chown -R elasticsearch:elasticsearch /usr/share/elasticsearch/
+  chown -R elasticsearch:elasticsearch /usr/share/elasticsearch/ /etc/elasticsearch/
 
   systemctl enable elasticsearch kibana
   systemctl start elasticsearch kibana
@@ -235,9 +275,13 @@ resource "aws_instance" "windows_server" {
   Expand-Archive C:\winlogbeat.zip -DestinationPath "C:\Program Files\Winlogbeat"
   $wlbPath = "C:\Program Files\Winlogbeat\winlogbeat-8.17.0-windows-x86_64"
 
-  # Configure Winlogbeat - point at Elasticsearch and Kibana, enable dashboard setup
+  # Configure Winlogbeat - point at Elasticsearch and Kibana, enable dashboard
+  # setup, and authenticate as winlogbeat_writer (ES security is enabled, so
+  # unauthenticated ingest/dashboard-setup calls are rejected)
   (Get-Content "$wlbPath\winlogbeat.yml") `
     -replace 'localhost:9200', '${aws_instance.ubuntu_vm.private_ip}:9200' `
+    -replace '#username: "elastic"', 'username: "winlogbeat_writer"' `
+    -replace '#password: "changeme"', 'password: "${random_password.winlogbeat_password.result}"' `
     -replace '#setup\.dashboards\.enabled: false', 'setup.dashboards.enabled: true' `
     -replace '#host: "localhost:5601"', 'host: "${aws_instance.ubuntu_vm.private_ip}:5601"' |
     Set-Content "$wlbPath\winlogbeat.yml"
@@ -260,6 +304,12 @@ resource "aws_instance" "windows_server" {
   # Enable object access auditing — required to generate Event ID 4698 (scheduled task created)
   auditpol /set /subcategory:"Other Object Access Events" /success:enable
 
+  # Enable Filtering Platform connection auditing — required to generate Event IDs 5156/5157
+  # (permitted/blocked connections) for every inbound SYN, regardless of whether a listener
+  # exists on the port. Sysmon Event ID 3 only logs connections to ports with an actual
+  # listener, so it can't see attempts against closed ports during a port scan.
+  auditpol /set /subcategory:"Filtering Platform Connection" /success:enable /failure:enable
+
   # Set low lockout policy and create throwaway victim account for brute force / spray simulation
   # Targets labvictim instead of Administrator to avoid locking out the access account
   net accounts /lockoutthreshold:5 /lockoutwindow:5 /lockoutduration:5
@@ -274,4 +324,10 @@ resource "aws_instance" "windows_server" {
   & "$wlbPath\winlogbeat.exe" setup --dashboards -c "$wlbPath\winlogbeat.yml"
   </powershell>
   EOF
+}
+
+output "kibana_admin_password" {
+	description = "Password for the 'labadmin' superuser - log into Kibana at http://<ubuntu-public-ip>:5601 with labadmin / this password. Retrieve with: terraform output -raw kibana_admin_password"
+	value       = random_password.admin_password.result
+	sensitive   = true
 }

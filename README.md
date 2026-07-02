@@ -157,8 +157,14 @@ Terraform will output the public IPs of all three instances when the apply compl
 |---|---|---|
 | Kali Linux | SSH | `ssh -i your-key.pem kali@<kali-public-ip>` |
 | Ubuntu SIEM | SSH | `ssh -i your-key.pem ubuntu@<ubuntu-public-ip>` |
-| Kibana | Browser | `http://<ubuntu-public-ip>:5601` |
+| Kibana | Browser | `http://<ubuntu-public-ip>:5601` — log in as `labadmin` (see below) |
 | Windows | RDP client | `<windows-public-ip>:3389` — decrypt password with your key pair via the AWS Console |
+
+Elasticsearch security is enabled (required for the Detection Engine — see [Bootstrap Details](#bootstrap-details)), so Kibana requires login. Retrieve the auto-generated `labadmin` superuser password after `terraform apply`:
+
+```bash
+terraform output -raw kibana_admin_password
+```
 
 ---
 
@@ -199,9 +205,9 @@ Each instance is bootstrapped via `user_data` on first launch:
 
 **Kali** — runs `apt-get full-upgrade` and installs the `kali-linux-default` metapackage (the standard Kali tool suite). Interactive prompts for Wireshark and Kismet are pre-seeded via `debconf` to prevent the script from hanging.
 
-**Ubuntu (SIEM)** — installs Elasticsearch and Kibana from the official Elastic 8.x APT repository. Elasticsearch is configured as a single-node cluster listening on all interfaces. SSL/TLS (`xpack.security`) is disabled — the Elasticsearch 8.x package pre-populates a keystore with SSL credentials that conflict with disabling security, so the keystore is wiped and recreated empty. This is an intentional trade-off: the MITM risk is acceptable given the lab's private VPC context and that production-grade TLS configuration is out of scope for this lab's learning goals. Kibana is configured to listen on all interfaces so it's reachable via the instance's public IP.
+**Ubuntu (SIEM)** — installs Elasticsearch and Kibana from the official Elastic 8.x APT repository. Elasticsearch is configured as a single-node cluster listening on all interfaces. `xpack.security` is **enabled** (authentication required) but TLS is disabled (`xpack.security.http/transport.ssl.enabled: false`) — this is an intentional trade-off: the MITM risk is acceptable given the lab's private VPC context, and production-grade TLS configuration is out of scope for this lab's learning goals. Security must stay enabled even without TLS because Kibana's Detection Engine (rules, alerts) depends on ES's security/RBAC APIs to resolve privileges; disabling it entirely breaks rule creation with 400/403/500 errors. Three users are provisioned via the ES file realm (`elasticsearch-users`, written straight to disk at boot, no running-cluster dependency): `labadmin` (superuser, for logging into Kibana — see [Accessing the Lab](#accessing-the-lab)), `kibana_service` (`kibana_system` role, used by Kibana itself), and `winlogbeat_writer` (superuser, used by Winlogbeat for ingest and dashboard setup — scoping this down to least-privilege is a good follow-up). Kibana also gets a generated encryption key (`kibana-encryption-keys generate`) for encrypted saved objects. Kibana is configured to listen on all interfaces so it's reachable via the instance's public IP.
 
-**Windows (Target)** — installs Sysmon using the [SwiftOnSecurity config](https://github.com/SwiftOnSecurity/sysmon-config) for comprehensive event coverage, then installs Winlogbeat 8.17.0. The Winlogbeat config is patched at boot to point at the Ubuntu instance's private IP for both Elasticsearch (9200) and Kibana (5601), and dashboard setup is enabled so that pre-built Winlogbeat dashboards are automatically loaded into Kibana.
+**Windows (Target)** — installs Sysmon using the [SwiftOnSecurity config](https://github.com/SwiftOnSecurity/sysmon-config) for comprehensive event coverage, then installs Winlogbeat 8.17.0. The Winlogbeat config is patched at boot to point at the Ubuntu instance's private IP for both Elasticsearch (9200) and Kibana (5601), authenticate as `winlogbeat_writer`, and dashboard setup is enabled so that pre-built Winlogbeat dashboards are automatically loaded into Kibana.
 
 ---
 
