@@ -1,0 +1,47 @@
+[metadata]
+creation_date = "2026/07/07"
+updated_date = "2026/07/07"
+
+[rule]
+author = ["FardeenI"]
+description = "This rule aims to detect a threat actor invoking a web request after compromising a host to download a malicious payload and write it to a file on disk by mapping an EID 1 followed by an EID 22 followed by an EID 11."
+name = "[Detection Engineering Lab] PowerShell Download Cradle"
+tags = ["[Detection Engineering Project]"]
+risk_score = 73
+severity = "high"
+type = "eql"
+language = "eql"
+rule_id = "2d306977-e2eb-4492-b572-ec55d668979a"
+index = ["winlogbeat-*"]
+from = "now-10m"
+interval = "5m"
+max_signals = 100
+enabled = true
+
+query = '''
+sequence by process.entity_id with maxspan=2m
+  [process where event.code == "1" and
+    process.name : ("cmd.exe", "powershell.exe", "pwsh.exe") and
+    process.command_line : (
+      "*iwr*", "*Invoke-WebRequest*", "*DownloadString*", "*DownloadFile*",
+      "*Net.WebClient*", "*curl*", "*wget*", "*bitsadmin*", "*certutil*-urlcache*"
+    )
+  ]
+  [network where event.code == "22"]
+  [file where event.code == "11" and
+    file.extension : ("exe", "dll", "ps1", "vbs", "bat", "scr")
+  ]
+'''
+
+[[rule.threat]]
+framework = "MITRE ATT&CK"
+
+[[rule.threat.technique]]
+id = "T1059"
+name = "Command and Scripting Interpreter"
+reference = "https://attack.mitre.org/techniques/T1059/"
+
+[rule.threat.tactic]
+id = "TA0002"
+name = "Execution"
+reference = "https://attack.mitre.org/tactics/TA0002/"

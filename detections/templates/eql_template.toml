@@ -1,0 +1,39 @@
+[metadata]
+creation_date = "YYYY/MM/DD"
+updated_date = "YYYY/MM/DD"
+
+[rule]
+author = ["Your Name"]
+description = "One or two sentences: what sequence of events this detects and why it matters."
+name = "Short, Specific Rule Name"
+risk_score = 60
+severity = "high"
+type = "eql"
+language = "eql"          # required literal value for this rule type
+rule_id = "00000000-0000-0000-0000-000000000000"
+index = ["winlogbeat-*"]
+from = "now-6m"
+interval = "5m"
+max_signals = 100
+enabled = true
+
+# EQL supports sequence matching across events - e.g. a process creation
+# immediately followed by a network connection from the same process.
+query = '''
+sequence by winlog.event_data.ProcessGuid
+  [process where event.code == "1" and process.name == "powershell.exe"]
+  [network where event.code == "3"]
+'''
+
+[[rule.threat]]
+framework = "MITRE ATT&CK"
+
+[[rule.threat.technique]]
+id = "T1059.001"
+name = "PowerShell"
+reference = "https://attack.mitre.org/techniques/T1059/001/"
+
+[rule.threat.tactic]
+id = "TA0002"
+name = "Execution"
+reference = "https://attack.mitre.org/tactics/TA0002/"

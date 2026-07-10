@@ -1,0 +1,44 @@
+[metadata]
+creation_date = "2026/07/06"
+updated_date = "2026/07/06"
+
+[rule]
+author = ["FardeenI"]
+description = "This rule aims to detect RDP brute force attacks by firing if many failed network logon attempts are made from the same source in short interval."
+name = "[Detection Engineering Project] RDP Brute Force"
+tags = ["[Detection Engineering Project]"]
+risk_score = 47
+severity = "medium"
+type = "threshold"
+rule_id = "f284de0b-9b9a-4d1d-97f6-bb8b34c3b5f5"
+index = ["winlogbeat-*"]
+from = "now-6m"
+interval = "1m"
+max_signals = 100
+enabled = true
+
+query = '''
+event.code: "4625" and winlog.logon.type : "Network"
+'''
+
+[rule.threshold]
+field = ["source.ip"]
+value = 5
+
+[[rule.threat]]
+framework = "MITRE ATT&CK"
+
+[[rule.threat.technique]]
+id = "T1110"
+name = "Brute Force"
+reference = "https://attack.mitre.org/techniques/T1110/"
+
+[[rule.threat.technique.subtechnique]]
+id = "T1110.001"
+name = "Password Guessing"
+reference = "https://attack.mitre.org/techniques/T1110/001/"
+
+[rule.threat.tactic]
+id = "TA0006"
+name = "Credential Access"
+reference = "https://attack.mitre.org/tactics/TA0006/"

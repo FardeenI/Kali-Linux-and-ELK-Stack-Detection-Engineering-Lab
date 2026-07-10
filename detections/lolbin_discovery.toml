@@ -1,0 +1,49 @@
+[metadata]
+creation_date = "2026/07/07"
+updated_date = "2026/07/07"
+
+[rule]
+author = ["FardeenI"]
+description = "This rule aims to detect LOLBin activity by firing when system/user/permissions groups information discovery command execution within a short interval exceeds a threshold."
+name = "[Detection Engineering Project] LOLBin Discovery"
+tags = ["[Detection Engineering Project]"]
+risk_score = 47
+severity = "medium"
+type = "threshold"
+rule_id = "c1107f49-3665-436b-aef8-1a21a24bc041"
+index = ["winlogbeat-*"]
+from = "now-15m"
+interval = "5m"
+max_signals = 100
+enabled = true
+
+query = '''
+event.code : "1" and process.name : ("whoami.exe" or "net.exe" or "ipconfig.exe" or "tasklist.exe" or "systeminfo.exe")
+'''
+
+[rule.threshold]
+field = ["user.name"]
+value = 6
+
+[[rule.threat]]
+framework = "MITRE ATT&CK"
+
+[[rule.threat.technique]]
+id = "T1082"
+name = "System Information Discovery"
+reference = "https://attack.mitre.org/techniques/T1082/"
+
+[[rule.threat.technique]]
+id = "T1033"
+name = "System Owner/User Discovery"
+reference = "https://attack.mitre.org/techniques/T1033/"
+
+[[rule.threat.technique]]
+id = "T1069"
+name = "Permission Groups Discovery"
+reference = "https://attack.mitre.org/techniques/T1069/"
+
+[rule.threat.tactic]
+id = "TA0007"
+name = "Discovery"
+reference = "https://attack.mitre.org/tactics/TA0007/"

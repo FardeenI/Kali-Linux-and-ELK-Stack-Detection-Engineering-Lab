@@ -1,0 +1,35 @@
+[metadata]
+creation_date = "YYYY/MM/DD"
+updated_date = "YYYY/MM/DD"
+
+[rule]
+author = ["Your Name"]
+description = "One or two sentences: what activity this detects and why it matters."
+name = "Short, Specific Rule Name"
+risk_score = 47          # 0-100, see Elastic's severity/risk_score mapping guidance
+severity = "medium"      # low | medium | high | critical
+type = "query"
+language = "kuery"       # kuery | lucene
+rule_id = "00000000-0000-0000-0000-000000000000"  # generate with: python -c "import uuid; print(uuid.uuid4())"
+index = ["winlogbeat-*"]
+from = "now-6m"           # optional, defaults to now-6m
+interval = "5m"           # optional, defaults to 5m
+max_signals = 100         # optional, defaults to 100
+enabled = true            # optional, defaults to true
+
+query = '''
+event.code: "4625" and winlog.event_data.TargetUserName: "labvictim"
+'''
+
+[[rule.threat]]
+framework = "MITRE ATT&CK"
+
+[[rule.threat.technique]]
+id = "T1110"
+name = "Brute Force"
+reference = "https://attack.mitre.org/techniques/T1110/"
+
+[rule.threat.tactic]
+id = "TA0006"
+name = "Credential Access"
+reference = "https://attack.mitre.org/tactics/TA0006/"

@@ -1,0 +1,39 @@
+[metadata]
+creation_date = "2026/07/02"
+updated_date = "2026/07/02"
+
+[rule]
+author = ["FardeenI"]
+description = "This rule aims to detect NMap Port scans by firing if many network connections to the same host are made in a short interval."
+name = "[Detection Engineering Project] NMap Port Scan"
+tags = ["[Detection Engineering Project]"]
+risk_score = 47
+severity = "medium"
+type = "threshold"
+rule_id = "1ae34137-4a30-4cc6-af3a-8f8ac587bbf0"
+index = ["winlogbeat-*"]
+from = "now-6m"
+interval = "1m"
+max_signals = 100
+enabled = true
+
+query = '''
+(event.code: "5156" or event.code: "5157") and winlog.event_data.Direction: "%%14592" and winlog.event_data.SourceAddress: "172.31.22.99" and winlog.event_data.Protocol: "6"
+'''
+
+[rule.threshold]
+field = []
+value = 20
+
+[[rule.threat]]
+framework = "MITRE ATT&CK"
+
+[[rule.threat.technique]]
+id = "T1046"
+name = "Network Service Discovery"
+reference = "https://attack.mitre.org/techniques/T1046/"
+
+[rule.threat.tactic]
+id = "TA0007"
+name = "Discovery"
+reference = "https://attack.mitre.org/tactics/TA0007/"

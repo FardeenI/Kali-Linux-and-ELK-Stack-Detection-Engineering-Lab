@@ -1,0 +1,47 @@
+[metadata]
+creation_date = "YYYY/MM/DD"
+updated_date = "YYYY/MM/DD"
+
+[rule]
+author = ["Your Name"]
+description = "One or two sentences: what volume/frequency pattern this detects and why it matters."
+name = "Short, Specific Rule Name"
+risk_score = 47
+severity = "medium"
+type = "threshold"
+rule_id = "00000000-0000-0000-0000-000000000000"
+index = ["winlogbeat-*"]
+from = "now-6m"
+interval = "5m"
+max_signals = 100
+enabled = true
+
+# The base filter - threshold aggregation is applied on top of this query's
+# matching events.
+query = '''
+event.code: "4625"
+'''
+
+[rule.threshold]
+field = ["winlog.event_data.TargetUserName"]  # field(s) to group/aggregate by - use [] for "All results" (no grouping)
+value = 5                                      # alert when count exceeds this value within the interval
+
+# Optional: require at least `value` distinct values of `field` per threshold
+# bucket (Kibana's "count distinct values of" option). Omit entirely if you
+# didn't set an additional cardinality condition in Kibana.
+[[rule.threshold.cardinality]]
+field = "winlog.event_data.TargetUserName"
+value = 2
+
+[[rule.threat]]
+framework = "MITRE ATT&CK"
+
+[[rule.threat.technique]]
+id = "T1110.001"
+name = "Password Guessing"
+reference = "https://attack.mitre.org/techniques/T1110/001/"
+
+[rule.threat.tactic]
+id = "TA0006"
+name = "Credential Access"
+reference = "https://attack.mitre.org/tactics/TA0006/"
