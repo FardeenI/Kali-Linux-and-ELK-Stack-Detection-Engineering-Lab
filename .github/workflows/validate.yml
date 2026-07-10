@@ -1,0 +1,37 @@
+name: Validate Detections
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "detections/**"
+      - "development/**"
+      - ".github/workflows/validate.yml"
+  pull_request:
+    paths:
+      - "detections/**"
+      - "development/**"
+      - ".github/workflows/validate.yml"
+
+jobs:
+  validate:
+    name: Validate TOML schema + MITRE ATT&CK mappings
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r development/requirements.txt
+
+      - name: Validate TOML schema
+        run: python development/validation.py
+
+      - name: Validate MITRE ATT&CK mappings
+        run: python development/mitre.py

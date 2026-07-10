@@ -1,0 +1,60 @@
+name: Deploy Detections
+
+# Deliberately push-only, main-only, no pull_request trigger: this job runs on
+# the self-hosted runner living on the SIEM box, so it must never execute
+# code from a fork/PR (see development/upload_to_elastic.py header for the
+# credentials it uses).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "detections/**"
+
+jobs:
+  validate:
+    name: Validate TOML schema + MITRE ATT&CK mappings
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r development/requirements.txt
+
+      - name: Validate TOML schema
+        run: python development/validation.py
+
+      - name: Validate MITRE ATT&CK mappings
+        run: python development/mitre.py
+
+  deploy:
+    name: Upload detections to Elastic Security
+    needs: validate
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r development/requirements.txt
+
+      - name: Upload to Elastic Security
+        env:
+          ELASTIC_URL: ${{ secrets.ELASTIC_URL }}
+          ELASTIC_PASSWORD: ${{ secrets.ELASTIC_PASSWORD }}
+          # ELASTIC_USERNAME intentionally omitted: upload_to_elastic.py
+          # defaults to "labadmin" when unset. Only add this secret (and
+          # this env line) if you're using a different Kibana user.
+        run: python development/upload_to_elastic.py
