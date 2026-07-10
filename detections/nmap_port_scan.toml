@@ -1,6 +1,6 @@
 [metadata]
 creation_date = "2026/07/02"
-updated_date = "2026/07/02"
+updated_date = "2026/07/10"
 
 [rule]
 author = ["FardeenI"]
@@ -12,7 +12,7 @@ severity = "medium"
 type = "threshold"
 rule_id = "1ae34137-4a30-4cc6-af3a-8f8ac587bbf0"
 index = ["winlogbeat-*"]
-from = "now-6m"
+from = "now-10m"
 interval = "1m"
 max_signals = 100
 enabled = true
@@ -23,7 +23,7 @@ query = '''
 
 [rule.threshold]
 field = []
-value = 20
+value = 15
 
 [[rule.threat]]
 framework = "MITRE ATT&CK"
