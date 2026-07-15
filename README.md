@@ -151,6 +151,26 @@ Terraform will output the public IPs of all three instances when the apply compl
 
 ---
 
+## GitHub Actions Automation (Optional)
+
+If you fork this repo and want the detections-as-code CI/CD pipeline (`.github/workflows/validate.yml`, `deploy.yml`) working out of the box — no manual "add repo secrets" or "SSH in and register a runner" steps — set three extra variables in `terraform.tfvars`:
+
+```hcl
+github_token = "github_pat_..."   # fine-grained PAT: Secrets r/w, Administration r/w, scoped to your fork
+github_owner = "yourname"
+github_repo  = "your-fork-name"
+```
+
+With these set, `terraform apply` will:
+- Create the `ELASTIC_URL` and `ELASTIC_PASSWORD` GitHub Actions secrets on your fork automatically (via the `integrations/github` Terraform provider).
+- Register the Ubuntu SIEM instance as a self-hosted GitHub Actions runner at boot (fetching a registration token via the GitHub API and running the same `config.sh`/`svc.sh` steps you'd otherwise run by hand over SSH).
+
+Leaving `github_token` blank (the default) skips all of this — the lab still deploys exactly as before, and you can wire up GitHub Actions manually later if you choose.
+
+> **Teardown note:** `terraform destroy` has no way to reach the Ubuntu instance to deregister its runner before terminating it, so a stale/offline runner entry will be left behind under your fork's **Settings → Actions → Runners**. Remove it manually from there after destroying the lab.
+
+---
+
 ## Accessing the Lab
 
 | Service | How | Address |

@@ -19,3 +19,18 @@ key_name = "YourKeyPairName"
 operator_ip_1 = "1.2.3.4/32"
 operator_ip_2 = "1.2.3.4/32"
 operator_ip_3 = "1.2.3.4/32"
+
+# --- GitHub Actions automation (optional) ---
+# Leave these unset (or delete the lines) to skip automated GitHub setup and
+# configure repo secrets / the self-hosted runner manually instead.
+#
+# github_token is a fine-grained PAT scoped to your fork, with Secrets:
+# read/write and Administration: read/write permissions.
+# github_owner/github_repo identify your fork, e.g. for
+# https://github.com/yourname/detection-engineering-lab:
+#   github_owner = "yourname"
+#   github_repo  = "detection-engineering-lab"
+#
+# github_token = "github_pat_..."
+# github_owner = "yourname"
+# github_repo  = "your-fork-name"

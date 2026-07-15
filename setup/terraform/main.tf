@@ -8,11 +8,24 @@ terraform {
 			source  = "hashicorp/random"
 			version = "~> 3.0"
 		}
+		github = {
+			source  = "integrations/github"
+			version = "~> 6.0"
+		}
 	}
 }
 
 provider "aws" {
 	region = var.aws_region
+}
+
+# Only used if var.github_token is set - see the "GitHub Actions automation
+# (optional)" section of README.md. A blank token is a valid provider
+# configuration; it just means the github_actions_secret resources below
+# are never created (count = 0), so no API calls are made against it.
+provider "github" {
+	token = var.github_token
+	owner = var.github_owner
 }
 
 # Elasticsearch/Kibana must have xpack.security enabled for the Detection
@@ -34,6 +47,27 @@ resource "random_password" "kibana_service_password" {
 resource "random_password" "winlogbeat_password" {
 	length  = 20
 	special = false
+}
+
+# GitHub Actions automation (optional) - wires the ELASTIC_URL/ELASTIC_PASSWORD
+# secrets that development/upload_to_elastic.py needs, replacing the manual
+# "add repo secrets" step. count = 0 (skipped entirely) when var.github_token
+# is blank, so this is opt-in and doesn't force every learner to have a PAT.
+resource "github_actions_secret" "elastic_url" {
+	count           = var.github_token != "" ? 1 : 0
+	repository      = var.github_repo
+	secret_name     = "ELASTIC_URL"
+	# The self-hosted runner always lives on this same Ubuntu instance as
+	# Kibana (see deploy.yml), so localhost avoids the AWS IGW hairpin
+	# limitation that breaks a box from reaching its own public IP.
+	value ="http://localhost:5601"
+}
+
+resource "github_actions_secret" "elastic_password" {
+	count           = var.github_token != "" ? 1 : 0
+	repository      = var.github_repo
+	secret_name     = "ELASTIC_PASSWORD"
+	value =random_password.admin_password.result
 }
 
 resource "aws_servicecatalogappregistry_application" "lab" {
@@ -247,6 +281,39 @@ resource "aws_instance" "ubuntu_vm" {
 
   systemctl enable elasticsearch kibana
   systemctl start elasticsearch kibana
+
+  # Self-hosted GitHub Actions runner (optional) - registers this box as the
+  # runner deploy.yml's "deploy" job targets, replacing the manual config.sh
+  # steps in the README. Skipped entirely when github_token is blank, so this
+  # is opt-in and doesn't force a PAT on learners who don't want CI/CD wired
+  # up yet.
+  GITHUB_TOKEN="${var.github_token}"
+  if [ -n "$GITHUB_TOKEN" ]; then
+    GITHUB_OWNER="${var.github_owner}"
+    GITHUB_REPO="${var.github_repo}"
+    RUNNER_VERSION="${var.github_runner_version}"
+
+    apt-get install -y jq
+
+    REG_TOKEN=$(curl -s -X POST \
+      -H "Authorization: Bearer $GITHUB_TOKEN" \
+      -H "Accept: application/vnd.github+json" \
+      -H "X-GitHub-Api-Version: 2022-11-28" \
+      "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/runners/registration-token" \
+      | jq -r .token)
+
+    mkdir -p /home/ubuntu/actions-runner
+    cd /home/ubuntu/actions-runner
+    curl -o actions-runner-linux-x64.tar.gz -L \
+      "https://github.com/actions/runner/releases/download/v$RUNNER_VERSION/actions-runner-linux-x64-$RUNNER_VERSION.tar.gz"
+    tar xzf actions-runner-linux-x64.tar.gz
+    chown -R ubuntu:ubuntu /home/ubuntu/actions-runner
+
+    runuser -l ubuntu -c "cd /home/ubuntu/actions-runner && ./config.sh --url https://github.com/$GITHUB_OWNER/$GITHUB_REPO --token $REG_TOKEN --unattended --labels self-hosted --name siem-runner"
+
+    ./svc.sh install ubuntu
+    ./svc.sh start
+  fi
   EOF
 }
 
