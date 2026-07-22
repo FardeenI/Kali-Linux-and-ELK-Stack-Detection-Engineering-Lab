@@ -70,18 +70,12 @@ resource "github_actions_secret" "elastic_password" {
 	value =random_password.admin_password.result
 }
 
-resource "aws_servicecatalogappregistry_application" "lab" {
-	name        = "DetectionEngineeringLab"
-	description = "Kali attacker, Windows target, and Ubuntu SIEM for detection engineering"
-}
-
 resource "aws_security_group" "kali_sg" {
         name        = "DetectionEngineeringLab-Kali"
         description = "Applied to Kali attacker instance to accept inbound SSH and send outbound traffic"
         tags = {
                 Name           = "Detection Engineering Lab NACL - Kali Attacker"
                 Project        = "Kali and ELK Stack Detection Engineering Lab"
-                awsApplication = aws_servicecatalogappregistry_application.lab.arn
         }
 
         ingress {
@@ -106,7 +100,6 @@ resource "aws_security_group" "windows_sg" {
         tags = {
                 Name           = "Detection Engineering Lab NACL - Windows Target"
                 Project        = "Kali and ELK Stack Detection Engineering Lab"
-                awsApplication = aws_servicecatalogappregistry_application.lab.arn
         }
 
         ingress {
@@ -139,7 +132,6 @@ resource "aws_security_group" "ubuntu_sg" {
         tags = {
                 Name           = "Detection Engineering Lab NACL - Ubuntu SIEM"
                 Project        = "Kali and ELK Stack Detection Engineering Lab"
-                awsApplication = aws_servicecatalogappregistry_application.lab.arn
         }
 
         ingress {
@@ -191,7 +183,6 @@ resource "aws_instance" "kali_linux" {
 	tags = {
 		Name           = "Kali Linux"
 		Project        = "Kali and ELK Stack Detection Engineering Lab"
-		awsApplication = aws_servicecatalogappregistry_application.lab.arn
 	}
 
 	user_data = <<-EOF
@@ -223,7 +214,6 @@ resource "aws_instance" "ubuntu_vm" {
 	tags = {
 		Name           = "SIEM (Elasticsearch, Kibana) - Ubuntu"
 		Project        = "Kali and ELK Stack Detection Engineering Lab"
-		awsApplication = aws_servicecatalogappregistry_application.lab.arn
 	}
 
 	user_data = <<-EOF
@@ -327,7 +317,6 @@ resource "aws_instance" "windows_server" {
 	tags = {
 		Name           = "Target (Sysmon, Winlogbeat) - Windows"
 		Project        = "Kali and ELK Stack Detection Engineering Lab"
-		awsApplication = aws_servicecatalogappregistry_application.lab.arn
 	}
 	user_data = <<-EOF
   <powershell>
