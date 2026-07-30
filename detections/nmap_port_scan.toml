@@ -18,7 +18,7 @@ max_signals = 100
 enabled = true
 
 query = '''
-(event.code: "5156" or event.code: "5157") and winlog.event_data.Direction: "%%14592" and winlog.event_data.SourceAddress: "172.31.22.99" and winlog.event_data.Protocol: "6"
+(event.code: "5156" or event.code: "5157") and winlog.event_data.Direction: "%%14592" and winlog.event_data.SourceAddress: "172.31.90.188" and winlog.event_data.Protocol: "6"
 '''
 
 [rule.threshold]
