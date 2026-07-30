@@ -299,7 +299,7 @@ resource "aws_instance" "ubuntu_vm" {
     tar xzf actions-runner-linux-x64.tar.gz
     chown -R ubuntu:ubuntu /home/ubuntu/actions-runner
 
-    runuser -l ubuntu -c "cd /home/ubuntu/actions-runner && ./config.sh --url https://github.com/$GITHUB_OWNER/$GITHUB_REPO --token $REG_TOKEN --unattended --labels self-hosted --name siem-runner"
+    runuser -l ubuntu -c "cd /home/ubuntu/actions-runner && ./config.sh --url https://github.com/$GITHUB_OWNER/$GITHUB_REPO --token $REG_TOKEN --unattended --replace --labels self-hosted --name siem-runner"
 
     ./svc.sh install ubuntu
     ./svc.sh start
